@@ -5,11 +5,13 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.9
+      - image: circleci/golang:1.12
+        environment:
+          GO111MODULE: "on"
 
     working_directory: /go/src/github.com/tscolari/mservice
     steps:
       - checkout
-      - run: go get -v -t -d ./...
-      - run: go get github.com/onsi/ginkgo/ginkgo
+      - run: go mod download
+      - run: GO111MODULE=off go get github.com/onsi/ginkgo/ginkgo
       - run: ginkgo -r -race
