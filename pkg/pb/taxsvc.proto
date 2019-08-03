@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pb;
+
+// The Tax service definition
+service Tax {
+  // Adds the tax value to the base value
+  rpc Add (AddRequest) returns (AddReply) {}
+
+  // Subtracts the tax value from the base value
+  rpc Sub (SubRequest) returns (SubReply) {}
+}
+
+// Add tax request containing the base value
+message AddRequest {
+  float value = 1;
+}
+
+// The add response containing the value with added tax or an error
+message AddReply {
+  float value = 1;
+  string err = 2;
+}
+
+// Sub tax request containing the value with the tax
+message SubRequest {
+  float value = 1;
+}
+
+// The sub response containing the value after tax value is subtracted from it
+message SubReply {
+  float value = 1;
+  string err = 2;
+}
