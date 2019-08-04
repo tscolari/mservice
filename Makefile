@@ -20,3 +20,7 @@ proto:
 	protoc pkg/pb/taxsvc.proto --go_out=plugins=grpc:.
 generate:
 	go generate ./...
+
+image:
+	docker build --rm -t tscolari/mservice:latest .
+	docker push tscolari/mservice:latest

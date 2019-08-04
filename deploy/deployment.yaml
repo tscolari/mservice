@@ -23,6 +23,25 @@ spec:
               value: "8080"
             - name: TAX_VALUE
               value: "0.20"
+            - name: HEALTH_CHECK_PORT
+              value: "9090"
           ports:
             - containerPort: 8080
               protocol: "TCP"
+              name: "grpc"
+            - containerPort: 9090
+              protocol: "TCP"
+              name: "health"
+          livenessProbe:
+            httpGet:
+              path: /health_check
+              port: 9090
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /health_check
+              port: 9090
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+

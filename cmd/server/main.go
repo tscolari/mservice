@@ -21,9 +21,9 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
+		cli.IntFlag{
 			Name:   "port, p",
-			Value:  "8080",
+			Value:  8080,
 			Usage:  "TCP Port to listen to",
 			EnvVar: "PORT",
 		},
@@ -32,6 +32,12 @@ func main() {
 			Value:  0.20,
 			Usage:  "Tax value used by the service",
 			EnvVar: "TAX_VALUE",
+		},
+		cli.IntFlag{
+			Name:   "health-check-port",
+			Value:  8081,
+			Usage:  "Health check port",
+			EnvVar: "HEALTH_CHECK_PORT",
 		},
 	}
 
@@ -46,11 +52,11 @@ func main() {
 			return err
 		}
 
-		level.Info(logger).Log("event", "server.loading", "port", c.String("port"), "tax_value", c.Float64("tax-value"))
+		level.Info(logger).Log("event", "server.loading", "port", c.Int("port"), "tax_value", c.Float64("tax-value"))
 		taxService := services.NewTax(c.Float64("tax-value"))
 		endpoints := endpoints.NewTax(log.With(logger, "service", "tax"), taxService)
 		grpcServer := transports.NewTaxGRPCServer(endpoints)
-		addr := fmt.Sprintf(":%s", c.String("port"))
+		addr := fmt.Sprintf(":%d", c.Int("port"))
 
 		grpcListener, err := net.Listen("tcp", addr)
 		if err != nil {
@@ -63,6 +69,7 @@ func main() {
 		pb.RegisterTaxServer(baseServer, grpcServer)
 		level.Info(logger).Log("event", "server.started")
 		defer level.Info(logger).Log("event", "server.finished")
+		go startHealthCheck(logger, c.Int("health-check-port"))
 		return baseServer.Serve(grpcListener)
 	}
 
