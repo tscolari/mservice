@@ -36,11 +36,17 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
-		logger := log.NewLogfmtLogger(os.Stderr)
+		logger := log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger = log.With(logger, "caller", log.DefaultCaller)
-		level.Info(logger).Log("event", "server.loading", "port", c.String("port"))
 
+		if !c.IsSet("tax-value") {
+			err := errors.New("No --tax-value given")
+			level.Error(logger).Log("event", "server.loading", "err", err)
+			return err
+		}
+
+		level.Info(logger).Log("event", "server.loading", "port", c.String("port"), "tax_value", c.Float64("tax-value"))
 		taxService := services.NewTax(c.Float64("tax-value"))
 		endpoints := endpoints.NewTax(log.With(logger, "service", "tax"), taxService)
 		grpcServer := transports.NewTaxGRPCServer(endpoints)
@@ -62,7 +68,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		os.Exit(1)
 	}
 }

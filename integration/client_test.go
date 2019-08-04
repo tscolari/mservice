@@ -36,11 +36,11 @@ var _ = Describe("Client", func() {
 		It("returns the correct values for the request", func() {
 			cmd := exec.Command(clientBinPath, "--addr", ":"+port, "--method", "add", "--value", "1000")
 			buffer := gbytes.NewBuffer()
-			cli, err := gexec.Start(cmd, GinkgoWriter, buffer)
+			cli, err := gexec.Start(cmd, buffer, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(cli, 1*time.Second).Should(gexec.Exit(0))
-			Eventually(buffer).Should(gbytes.Say("resp=1250"))
+			Eventually(buffer).Should(gbytes.Say("Result: 1250.00"))
 		})
 	})
 
@@ -48,11 +48,11 @@ var _ = Describe("Client", func() {
 		It("returns the correct values for the request", func() {
 			cmd := exec.Command(clientBinPath, "--addr", ":"+port, "--method", "sub", "--value", "1250")
 			buffer := gbytes.NewBuffer()
-			cli, err := gexec.Start(cmd, GinkgoWriter, buffer)
+			cli, err := gexec.Start(cmd, buffer, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(cli, 1*time.Second).Should(gexec.Exit(0))
-			Eventually(buffer).Should(gbytes.Say("resp=1000"))
+			Eventually(buffer).Should(gbytes.Say("Result: 1000.00"))
 		})
 	})
 })

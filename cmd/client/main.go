@@ -8,7 +8,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
 	"github.com/tscolari/mservice/pkg/services"
 	"github.com/tscolari/mservice/pkg/transports"
@@ -38,14 +37,17 @@ func main() {
 	}
 
 	app.Action = func(c *cli.Context) error {
-		logger := log.NewLogfmtLogger(os.Stderr)
+		logger := log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 		logger.Log("event", "starting")
 		defer logger.Log("event", "exiting")
 
+		if !c.IsSet("method") || !c.IsSet("value") {
+			return errors.New("No --method or --value argument present")
+		}
+
 		conn, err := grpc.Dial(c.String("addr"), grpc.WithInsecure(), grpc.WithTimeout(time.Second))
 		if err != nil {
-			level.Error(logger).Log("err", err)
 			return errors.Wrap(err, "dialing connection")
 		}
 		defer conn.Close()
@@ -66,17 +68,16 @@ func main() {
 		}
 
 		if err != nil {
-			level.Error(logger).Log("err", err)
 			return errors.Wrap(err, "the server returned an error")
 		}
 
-		level.Info(logger).Log("resp", v)
+		fmt.Printf("Result: %.2f\n", v)
 		return nil
 	}
 
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintf(os.Stderr, "Error: %s", err)
 		os.Exit(1)
 	}
 }
