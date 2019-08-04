@@ -6,8 +6,8 @@ metadata:
     app: mservice
 spec:
   ports:
-  - port: 80
-    targetPort: 8080
+  - port: 443
+    targetPort: 4443
   type: ClusterIP
   selector:
     app: mservice

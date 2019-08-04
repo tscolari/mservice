@@ -4,11 +4,11 @@ metadata:
   name: mservice
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
 spec:
   backend:
     serviceName: mservice
-    servicePort: 80
+    servicePort: 443
   rules:
   - host: mservice.local
     http:
@@ -16,4 +16,4 @@ spec:
       - path: /
         backend:
           serviceName: mservice
-          servicePort: 80
+          servicePort: 443

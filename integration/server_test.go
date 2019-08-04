@@ -22,7 +22,11 @@ var _ = Describe("Server", func() {
 	BeforeEach(func() {
 		port = strconv.Itoa(8000 + rand.Intn(100))
 		hcPort = strconv.Itoa(9000 + rand.Intn(100))
-		cmd := exec.Command(serverBinPath, "--port", port, "--tax-value", "0.25", "--health-check-port", hcPort)
+		cmd := exec.Command(serverBinPath,
+			"--port", port,
+			"--tax-value", "0.25",
+			"--health-check-port", hcPort,
+			"--insecure") // Authenticated tests are done with the client
 		var err error
 		sess, err = gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())

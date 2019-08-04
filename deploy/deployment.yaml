@@ -14,19 +14,33 @@ spec:
       labels:
         app: mservice
     spec:
+      volumes:
+        - name: secrets
+          secret:
+            secretName: server-tls
       containers:
         - name: server
           image: tscolari/mservice:latest
           command: ["server"]
+          volumeMounts:
+            - name: secrets
+              readOnly: true
+              mountPath: "/etc/tls-secrets"
           env:
             - name: PORT
-              value: "8080"
+              value: "4443"
             - name: TAX_VALUE
               value: "0.20"
             - name: HEALTH_CHECK_PORT
               value: "9090"
+            - name: TLS_CERT_PATH
+              value: "/etc/tls-secrets/tls-cert"
+            - name: TLS_KEY_PATH
+              value: "/etc/tls-secrets/tls-key"
+            - name: CA_CERT_PATH
+              value: "/etc/tls-secrets/ca-cert"
           ports:
-            - containerPort: 8080
+            - containerPort: 4443
               protocol: "TCP"
               name: "grpc"
             - containerPort: 9090

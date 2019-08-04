@@ -1,11 +1,15 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -39,6 +43,25 @@ func main() {
 			Usage:  "Health check port",
 			EnvVar: "HEALTH_CHECK_PORT",
 		},
+		cli.StringFlag{
+			Name:   "tls-cert",
+			Usage:  "Path to the TLS certificate",
+			EnvVar: "TLS_CERT_PATH",
+		},
+		cli.StringFlag{
+			Name:   "tls-key",
+			Usage:  "Path to the TLS key",
+			EnvVar: "TLS_KEY_PATH",
+		},
+		cli.StringFlag{
+			Name:   "ca-cert",
+			Usage:  "Path to the CA cert",
+			EnvVar: "CA_CERT_PATH",
+		},
+		cli.BoolFlag{
+			Name:  "insecure",
+			Usage: "Skip TLS authentication",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -58,6 +81,20 @@ func main() {
 		grpcServer := transports.NewTaxGRPCServer(endpoints)
 		addr := fmt.Sprintf(":%d", c.Int("port"))
 
+		grpcOptions := []grpc.ServerOption{grpc.UnaryInterceptor(kitgrpc.Interceptor)}
+		if !c.Bool("insecure") {
+			tlsCreds, err := loadCerts(c.String("tls-cert"), c.String("tls-key"), c.String("ca-cert"))
+			if err != nil {
+				level.Error(logger).Log("event", "tls.failed", "err", err)
+				return errors.Wrap(err, "loading TLS credentials")
+			}
+
+			level.Info(logger).Log("event", "tls.setup", "tls_mode", "on")
+			grpcOptions = append(grpcOptions, grpc.Creds(tlsCreds))
+		} else {
+			level.Warn(logger).Log("event", "tls.setup", "tls_mode", "off", "msg", "server running in insecure mode")
+		}
+
 		grpcListener, err := net.Listen("tcp", addr)
 		if err != nil {
 			level.Error(logger).Log("event", "listen", "err", err)
@@ -65,10 +102,11 @@ func main() {
 		}
 		defer grpcListener.Close()
 
-		baseServer := grpc.NewServer(grpc.UnaryInterceptor(kitgrpc.Interceptor))
+		baseServer := grpc.NewServer(grpcOptions...)
 		pb.RegisterTaxServer(baseServer, grpcServer)
 		level.Info(logger).Log("event", "server.started")
 		defer level.Info(logger).Log("event", "server.finished")
+
 		go startHealthCheck(logger, c.Int("health-check-port"))
 		return baseServer.Serve(grpcListener)
 	}
@@ -78,4 +116,29 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
 		os.Exit(1)
 	}
+}
+
+func loadCerts(certPath, keyPath, caPath string) (credentials.TransportCredentials, error) {
+	crt, err := tls.LoadX509KeyPair(certPath, keyPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load key pair from")
+	}
+
+	rawCaCrt, err := ioutil.ReadFile(caPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not load CA certificate from file")
+	}
+
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(rawCaCrt); !ok {
+		return nil, errors.Wrap(err, "could not append CA certificate to the pool")
+	}
+
+	tlsCreds := credentials.NewTLS(&tls.Config{
+		Certificates: []tls.Certificate{crt},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    certPool,
+	})
+
+	return tlsCreds, nil
 }
