@@ -1,17 +1,58 @@
-# Golang CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-go/ for more details
 version: 2
 jobs:
+
   build:
     docker:
       - image: circleci/golang:1.12
         environment:
           GO111MODULE: "on"
-
     working_directory: /go/src/github.com/tscolari/mservice
     steps:
       - checkout
       - run: go mod download
       - run: GO111MODULE=off go get github.com/onsi/ginkgo/ginkgo
       - run: ginkgo -r -race
+
+  build_image:
+    docker:
+      - image: docker:17.05.0-ce-git
+        environment:
+          DOCKER_HUB_CREDS: "configured on circleci web ui"
+    working_directory: /go/src/github.com/tscolari/mservice
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: make image
+
+  deploy:
+    docker:
+      - image: lachlanevenson/k8s-kubectl
+        environment:
+          SERVICE_ACCOUNT_STUFF: "configured on circleci web ui"
+    working_directory: /go/src/github.com/tscolari/mservice
+    steps:
+      - checkout
+      - run: make deploy
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - build
+      # Commented out because there's no point as it's not configured to push to dockerhub
+      # - build_image:
+      #     requires:
+      #       - build
+      #     filters:
+      #       branches:
+      #         only:
+      #           - master
+
+      # Commented out because there's no point as it's not deploying
+      # - deploy:
+      #     requires:
+      #       - build_image
+      #     filters:
+      #       branches:
+      #         only:
+      #           - master
