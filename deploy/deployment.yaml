@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mservice-deployment
+  labels:
+    app: mservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mservice
+  template:
+    metadata:
+      labels:
+        app: mservice
+    spec:
+      containers:
+        - name: server
+          image: tscolari/mservice:latest
+          command: ["server"]
+          env:
+            - name: PORT
+              value: "8080"
+            - name: TAX_VALUE
+              value: "0.20"
+          ports:
+            - containerPort: 8080
+              protocol: "TCP"

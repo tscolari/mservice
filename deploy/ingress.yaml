@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: mservice
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+spec:
+  backend:
+    serviceName: mservice
+    servicePort: 80
+  rules:
+  - host: mservice.local
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: mservice
+          servicePort: 80

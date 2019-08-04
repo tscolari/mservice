@@ -1,3 +1,5 @@
+.PHONY: server client clean deploy
+
 all: server client
 
 server:
@@ -8,6 +10,11 @@ client:
 
 clean:
 	rm -rf server client
+
+deploy:
+	kubectl apply -f deploy/deployment.yaml
+	kubectl apply -f deploy/service.yaml
+	kubectl apply -f deploy/ingress.yaml
 
 proto:
 	protoc pkg/pb/taxsvc.proto --go_out=plugins=grpc:.

@@ -45,3 +45,16 @@ The value of the tax % is set on the server initialisation.
 
  go test ./...
 ```
+
+## Deployment:
+
+To deploy locally to minikube:
+
+```
+minikube start
+minikube addons enable ingress
+
+# once the cluster is up
+
+make deploy
+```
